@@ -1,0 +1,8 @@
+Assignment-2.pdf
+hello
+hello.c
+hw2
+hw2.c
+ls.txt
+test-checklist.txt
+test.txt

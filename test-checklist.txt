@@ -1,0 +1,41 @@
+// TODO: fg a stoped process then ctrl-z
+// TODO: error when do >>
+
+// Testing checklist
+	ctrl-c, ctrl-z
+		direct
+		fg command
+		bg command
+	jobs
+		direct
+		unknown arguments
+	cd
+		direct
+		unknown arguments
+		valid arguments
+	quit
+		direct
+		unknown arguments
+	fg, bg, kill (call jobs in each step)
+		direct
+		%# and # argument, both valid and invalid (random number, letter, or not used jid)
+		no job
+		stopped job
+		bg job
+	general fg
+		invalid
+		valid (sleep, printing, calculating)
+		ctrl-c (intercept), ctrl-z (stop)
+		inputs when running (must be ignored)
+		prompt> is not displayed when enter a cmd
+	general bg
+		invalid
+		valid (sleep, printing, calculating)
+		ctrl-c, ctrl-z (both ignored)
+		accept inputs when running
+		prompt> display per cmd
+	IO redirect
+		invalid >, < and >>
+		<, > in 1 command
+		<, >> in 1 command
+
