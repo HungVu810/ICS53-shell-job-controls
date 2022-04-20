@@ -1,5 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
-/* #define _XOPEN_SOURCE 500 */
+#define _XOPEN_SOURCE 500
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -11,7 +11,7 @@
 #include <signal.h>
 #include <fcntl.h> // file descriptor redirection
 
-#define DEBUG_ENALBED 0
+#define DEBUG_ENALBED 1
 
 #define MAX_PATH 256 // the current working directory cwd
 #define MAX_LINE 80  // the number of characters entered at the prompt
@@ -321,8 +321,11 @@ void processBuiltInBg(int jid){
 }
 
 void processBuiltInKill(int jid){
+#if DEBUG_ENALBED
+	printf("killing job [%i]\n", jobs[jid].pid);
+#endif
 	jobs[jid].terminated = 1;
-	kill(jobs[jid].pid, SIGINT);
+	killpg(jobs[jid].pid, SIGINT);
 }
 
 int processGeneralFg(){
@@ -425,7 +428,8 @@ void redirectIO(int argc){
 			// argv[i - 1] >> argv[i + 1], argv[i - 1] is a program and argv[i + 1] is a file
 			if(i + 1 < argc && argv[i + 1]){
 				/* Output appended to argv[i + 1] (Create or Append) */
-				int outFileID = open(argv[i + 1], O_CREAT|O_APPEND, mode);
+				// add write option, and remove truncate for appending to file to work properly
+				int outFileID = open(argv[i + 1], O_CREAT|O_WRONLY|O_APPEND, mode);
 				dup2(outFileID, STDOUT_FILENO);
 				// close unused fd
 				close(outFileID);

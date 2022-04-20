@@ -1,5 +1,8 @@
-// TODO: fg a stoped process then ctrl-z
-// TODO: error when do >>
+// kill % stopped job doesn't work ?
+// fg % stopped job doesn't work
+
+// fg % stopped job repretedly print job[] [] [] [] but the job is killed after ctrl-c
+// kill % (doesn't work), then fg % doesn't repretedly print job[][][][]
 
 // Testing checklist
 	ctrl-c, ctrl-z

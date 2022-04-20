@@ -1,0 +1,20 @@
+total 476
+-rw-r--r-- 1 hungvu hungvu 384802 Apr 10 18:20 Assignment-2.pdf
+-rwxr-xr-x 1 hungvu hungvu  16656 Apr 18 19:34 hello
+-rw-r--r-- 1 hungvu hungvu    188 Apr 18 19:34 hello.c
+-rwxr-xr-x 1 hungvu hungvu  29336 Apr 20 13:01 hw2
+-rw-r--r-- 1 hungvu hungvu  33529 Apr 20 13:01 hw2.c
+-rwxr-xr-x 1 hungvu hungvu      0 Apr 20 07:42 ls.txt
+-rwxr-xr-x 1 hungvu hungvu      0 Apr 20 13:02 test
+-rw-r--r-- 1 hungvu hungvu    791 Apr 20 12:54 test-checklist.txt
+-rwxr-xr-x 1 hungvu hungvu      6 Apr 20 12:54 test.txt
+Assignment-2.pdf
+hello
+hello.c
+hw2
+hw2.c
+ls.txt
+newfile.txt
+test
+test-checklist.txt
+test.txt
