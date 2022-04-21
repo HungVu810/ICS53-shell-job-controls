@@ -1,9 +1,11 @@
-// kill % stopped job doesn't work ?
-// fg % stopped job doesn't work
+sleep
+general bg: fg, bg, kill, ctrl-c, ctrl-z, jobs
+general fg: fg, bg, kill, ctrl-c, ctrl-z, jobs
+hello
+general bg: fg, bg, kill, ctrl-c, ctrl-z, jobs
+general fg: fg, bg, kill, ctrl-c, ctrl-z, jobs
 
-// fg % stopped job repretedly print job[] [] [] [] but the job is killed after ctrl-c
-// kill % (doesn't work), then fg % doesn't repretedly print job[][][][]
-
+// kill gives double propmt>
 // Testing checklist
 	ctrl-c, ctrl-z
 		direct
@@ -41,4 +43,8 @@
 		invalid >, < and >>
 		<, > in 1 command
 		<, >> in 1 command
+
+
+// fg % stopped job repretedly print job[] [] [] [] but the job is killed after ctrl-c
+// -> because DEBUG_ENALBED == 1
 

@@ -11,7 +11,7 @@
 #include <signal.h>
 #include <fcntl.h> // file descriptor redirection
 
-#define DEBUG_ENALBED 1
+#define DEBUG_ENALBED 0
 
 #define MAX_PATH 256 // the current working directory cwd
 #define MAX_LINE 80  // the number of characters entered at the prompt
@@ -46,9 +46,6 @@ void SIGTSTPhandler(int signal);
 // check if there is a foreground job, return jid is true, -1 otherwise
 int getfjid(){
 	for(int i = 0; i < MAX_JOB; i++){
-#if DEBUG_ENALBED
-		printf("job [%i] [%i] [%i] [%s]\n", i + 1, jobs[i].pid, jobs[i].status, jobs[i].cmd);
-#endif
 		if(jobs[i].status == 2) return i;
 	}
 	return -1;
@@ -82,7 +79,7 @@ int getcmdjid(){
 			int jid = atoi(argv[1] + 1) - 1;
 			if(0 <= jid && jid < MAX_JOB && jobs[jid].pid != -1){
 #if DEBUG_ENALBED
-				printf("job id [%i] returned\n", jid);
+				printf("job id [jid:%i, pid:%i] returned\n", jid, jobs[jid].pid);
 #endif
 				return jid;
 			}
@@ -311,6 +308,12 @@ void processBuiltInFg(int jid){
 	// TODO: could it possible that tcgetpgrp() != currentpgid
 	// newPgidSetsFgroup(fd, jobs[jid].pid);
 	waitfgjob(jid);
+#if DEBUG_ENALBED
+	for(int i = 0; i < MAX_JOB; i++){
+		if(i == 0) printf("current pgid: %i\n", getpgid(getpid()));
+		printf("job [jid:%i] [pid:%i] [pgid:%i] [stat:%i] [term:%i] [%s]\n", i + 1, jobs[i].pid, getpgid(jobs[i].pid), jobs[i].status, jobs[i].terminated, jobs[i].cmd);
+	}
+#endif
 }
 
 void processBuiltInBg(int jid){
@@ -318,14 +321,25 @@ void processBuiltInBg(int jid){
 	jobs[jid].status = 0;
 	jobs[jid].terminated = 1;
 	kill(jobs[jid].pid, SIGCONT);
+#if DEBUG_ENALBED
+	for(int i = 0; i < MAX_JOB; i++){
+		if(i == 0) printf("current pgid: %i\n", getpgid(getpid()));
+		printf("job [jid:%i] [pid:%i] [pgid:%i] [stat:%i] [term:%i] [%s]\n", i + 1, jobs[i].pid, getpgid(jobs[i].pid), jobs[i].status, jobs[i].terminated, jobs[i].cmd);
+	}
+#endif
 }
 
 void processBuiltInKill(int jid){
-#if DEBUG_ENALBED
-	printf("killing job [%i]\n", jobs[jid].pid);
-#endif
 	jobs[jid].terminated = 1;
-	killpg(jobs[jid].pid, SIGINT);
+	// TODO: some child can ignore sigint ? change to sigkill
+	kill(jobs[jid].pid, SIGKILL);
+	resetjob(jid);
+#if DEBUG_ENALBED
+	for(int i = 0; i < MAX_JOB; i++){
+		if(i == 0) printf("current pgid: %i\n", getpgid(getpid()));
+		printf("job [jid:%i] [pid:%i] [pgid:%i] [stat:%i] [term:%i] [%s]\n", i + 1, jobs[i].pid, getpgid(jobs[i].pid), jobs[i].status, jobs[i].terminated, jobs[i].cmd);
+	}
+#endif
 }
 
 int processGeneralFg(){
@@ -348,7 +362,7 @@ int processGeneralFg(){
 				setpgid(0, 0);
 				if(execv(argv[0], argv) == -1 && execvp(argv[0], argv) == -1){
 					perror("Unknown or invalid command");
-					exit(EXIT_SUCCESS);
+					exit(EXIT_FAILURE);
 				}
 			// }
 		}
@@ -358,6 +372,12 @@ int processGeneralFg(){
 		}
 		return 1;
 	}
+#if DEBUG_ENALBED
+	for(int i = 0; i < MAX_JOB; i++){
+		if(i == 0) printf("current pgid: %i\n", getpgid(getpid()));
+		printf("job [jid:%i] [pid:%i] [pgid:%i] [stat:%i] [term:%i] [%s]\n", i + 1, jobs[i].pid, getpgid(jobs[i].pid), jobs[i].status, jobs[i].terminated, jobs[i].cmd);
+	}
+#endif
 	return 0;
 }
 
@@ -390,7 +410,18 @@ int processGeneralBg(){
 				exit(EXIT_FAILURE);
 			}
 		}
+		else{ // parent process
+			// set the pgid of the child to itself instead of keeping the inherinted
+			// process gid to prevent reciveing forground signal from the current process (tcgetpgrp == currentpgid)
+			setpgid(jobs[jid].pid, jobs[jid].pid);
+		}
 		// dont wait for the child process, only handle its signal
+#if DEBUG_ENALBED
+	for(int i = 0; i < MAX_JOB; i++){
+		if(i == 0) printf("current pgid: %i\n", getpgid(getpid()));
+		printf("job [jid:%i] [pid:%i] [pgid:%i] [stat:%i] [term:%i] [%s]\n", i + 1, jobs[i].pid, getpgid(jobs[i].pid), jobs[i].status, jobs[i].terminated, jobs[i].cmd);
+	}
+#endif
 		return 1;
 	}
 	return 0;
@@ -512,11 +543,16 @@ void cleanupIO(int argc, int num_matched_char){
 /* parse token, return -1 if failed, argc if success */
 // NOTE: CTRL-C, CTRL-Z WILL SKIP SCANF (num_matched_char = -1)
 int parseTokens(int *num_matched_char){
+	// prompt_printed is used to prevent prompt> to print twice incase of ctrl-z or kill in some situation
+	static int prompt_printed = 0;
 	size_t i = 0;
 	// if there is no foreground job
 	if(getfjid() == -1){
 	// if(tcgetpgrp(fd) == currentpgid){
-		printf("prompt> ");
+		if(!prompt_printed){
+			printf("prompt> ");
+			prompt_printed = 1;
+		}
 		if((*num_matched_char = scanf("%[^\n]", cmdbuffer_unaltered)) != EOF){
 			// num_matched_char == 0 means entered '\n' into the prompt, otherwise a
 			// potential command
@@ -537,6 +573,11 @@ int parseTokens(int *num_matched_char){
 		printf("input cmd: %s\n", cmdbuffer_unaltered);
 #endif
 	}
+#if DEBUG_ENALBED
+	printf("there is a running foreground job, not parsing token\n");
+#endif
+	// during prompt> scanf, recieved signal will pop function this from the stack during scanf waiting for input so it is unlikely that it would reach here, only when scanf is sucess then prompt_printed is enabled.
+	prompt_printed = 0;
 	return i; // argc
 }
 
@@ -552,7 +593,7 @@ int main(){
 		do{
 			// set the pgid of each spawned process to its own pid so the signal does not
 			// propagated to the child pid
-			signal(SIGTTOU, SIG_IGN);
+			/* signal(SIGTTOU, SIG_IGN); */
 			signal(SIGCHLD, SIGCHLDhandler);
 			signal(SIGINT, SIGINThandler);
 			signal(SIGTSTP, SIGTSTPhandler);
